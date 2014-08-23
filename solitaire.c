@@ -19,7 +19,8 @@ static void initialize_ace_piles(pile *ace_piles);
 static void deal_to_piles(struct pile *deck,struct pile *piles);
 static void print_ace_piles(struct pile *ace_piles,bool bOnlyFaceUp);
 static void print_piles(struct pile *piles,bool bOnlyFaceUp);
-int build_ace_pile(struct pile *ace_piles,struct pile *piles);
+static int build_ace_pile(struct pile *ace_piles,struct pile *piles);
+static int start_king_pile(struct pile *piles);
 
 int main(int argc,char **argv)
 {
@@ -204,9 +205,18 @@ static int play_solitaire(struct pile *deck,struct pile *ace_piles,struct pile *
     retval = build_ace_pile(ace_piles,piles);
 
     if (retval) {
-      printf("print_ace_piles(ace_piles,false);\n");
+      printf("build_ace_pile print_ace_piles(ace_piles,false);\n");
       print_ace_piles(ace_piles,false);
       printf("print_piles(piles,false);\n");
+      print_piles(piles,false);
+
+      continue;
+    }
+
+    retval = start_king_pile(piles);
+
+    if (retval) {
+      printf("start_king_pile print_piles(piles,false);\n");
       print_piles(piles,false);
 
       continue;
@@ -259,6 +269,9 @@ static void print_ace_piles(struct pile *ace_piles,bool bOnlyFaceUp)
   for (m = 0; m < NUM_SUITS; m++) {
     if (bOnlyFaceUp) {
       for (n = 0; n < ace_piles[m].face_up_depth; n++) {
+        if (!n)
+          printf("%d ",m);
+
         if (n < ace_piles[m].face_up_depth - 1)
           print_card(ace_piles[m].pile[n],' ');
         else
@@ -267,6 +280,9 @@ static void print_ace_piles(struct pile *ace_piles,bool bOnlyFaceUp)
     }
     else {
       for (n = 0; n < ace_piles[m].pile_depth; n++) {
+        if (!n)
+          printf("%d ",m);
+
         if (n < ace_piles[m].pile_depth - 1)
           print_card(ace_piles[m].pile[n],' ');
         else
@@ -284,6 +300,9 @@ static void print_piles(struct pile *piles,bool bOnlyFaceUp)
   for (m = 0; m < NUM_PILES; m++) {
     if (bOnlyFaceUp) {
       for (n = 0; n < piles[m].face_up_depth; n++) {
+        if (!n)
+          printf("%d ",m);
+
         if (n < piles[m].face_up_depth - 1)
           print_card(piles[m].pile[n],' ');
         else
@@ -292,6 +311,9 @@ static void print_piles(struct pile *piles,bool bOnlyFaceUp)
     }
     else {
       for (n = 0; n < piles[m].pile_depth; n++) {
+        if (!n)
+          printf("%d ",m);
+
         if (n < piles[m].pile_depth - 1) {
           if (n == piles[m].face_up_depth - 1)
             print_card(piles[m].pile[n],'/');
@@ -305,7 +327,7 @@ static void print_piles(struct pile *piles,bool bOnlyFaceUp)
   }
 }
 
-int build_ace_pile(struct pile *ace_piles,struct pile *piles)
+static int build_ace_pile(struct pile *ace_piles,struct pile *piles)
 {
   int m;
   int n;
@@ -355,6 +377,42 @@ int build_ace_pile(struct pile *ace_piles,struct pile *piles)
             piles[n].face_up_depth = 0;
 
           return 1;
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
+static int start_king_pile(struct pile *piles)
+{
+  int m;
+  int n;
+  int p;
+  int rank;
+
+  for (n = 0; n < NUM_PILES; n++) {
+    if (!piles[n].pile_depth) {
+      for (m = 0; m < NUM_PILES; m++) {
+        if ((piles[m].face_up_depth == 1) && (piles[m].pile_depth > 1)) {
+          rank = rank_of(piles[m].pile[0]);
+
+          if (rank == KING) {
+            piles[n].pile[0] = piles[m].pile[0];
+            piles[n].pile_depth = 1;
+            piles[n].face_up_depth = 1;
+
+            for (p = 0; p < piles[m].pile_depth - 1; p++)
+              piles[m].pile[p] = piles[m].pile[p+1];
+
+            piles[m].pile_depth--;
+
+            if (!piles[m].pile_depth)
+              piles[m].face_up_depth = 0;
+
+            return 1;
+          }
         }
       }
     }
